@@ -16,6 +16,13 @@ const PLATFORM_LABEL: Record<Platform, string> = {
 
 const PLATFORM_ORDER: Platform[] = ["taobao", "jd", "pdd"];
 
+function statusText(status: { status: string; reason?: string }) {
+  if (status.status === "ok") return "抓取成功";
+  if (status.status === "blocked") return "被风控拦截";
+  if (status.status === "empty") return "未提取到价格";
+  return "抓取失败";
+}
+
 function CandidateCard({ item }: { item: ProductCandidate }) {
   return (
     <li className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -140,6 +147,35 @@ export default function Home() {
                   当前没有可用候选结果。
                 </div>
               )}
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 sm:text-xl">
+                平台抓取状态
+              </h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {PLATFORM_ORDER.map((platform) => {
+                  const status = result.platformStatus[platform];
+                  return (
+                    <div
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
+                      key={platform}
+                    >
+                      <div className="text-base font-medium text-zinc-800">
+                        {PLATFORM_LABEL[platform]}
+                      </div>
+                      <div className="mt-1 text-sm text-zinc-600">
+                        {statusText(status)}
+                      </div>
+                      {status.reason ? (
+                        <div className="mt-1 text-xs text-zinc-500">
+                          {status.reason}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

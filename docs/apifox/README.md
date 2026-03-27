@@ -48,6 +48,11 @@
       "jd": [],
       "pdd": []
     },
+    "platformStatus": {
+      "taobao": { "status": "ok" },
+      "jd": { "status": "blocked", "reason": "页面风控: 京东验证" },
+      "pdd": { "status": "ok" }
+    },
     "totalCandidates": 9
   }
 }

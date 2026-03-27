@@ -2,11 +2,7 @@ import {
   findLowestPrice,
   type ProductCandidate,
 } from "../pricing/findLowestPrice";
-import {
-  fetchJdCandidates,
-  fetchPddCandidates,
-  fetchTaobaoCandidates,
-} from "./mockAdapters";
+import { fetchPlatformCandidates } from "./liveAdapters";
 import type { SearchResult } from "./types";
 
 function topThree(items: ProductCandidate[]): ProductCandidate[] {
@@ -14,16 +10,22 @@ function topThree(items: ProductCandidate[]): ProductCandidate[] {
 }
 
 export async function searchByKeyword(keyword: string): Promise<SearchResult> {
-  const [taobaoRaw, jdRaw, pddRaw] = await Promise.all([
-    fetchTaobaoCandidates(keyword),
-    fetchJdCandidates(keyword),
-    fetchPddCandidates(keyword),
+  const [taobaoResult, jdResult, pddResult] = await Promise.all([
+    fetchPlatformCandidates("taobao", keyword),
+    fetchPlatformCandidates("jd", keyword),
+    fetchPlatformCandidates("pdd", keyword),
   ]);
 
   const byPlatform = {
-    taobao: topThree(taobaoRaw),
-    jd: topThree(jdRaw),
-    pdd: topThree(pddRaw),
+    taobao: topThree(taobaoResult.items),
+    jd: topThree(jdResult.items),
+    pdd: topThree(pddResult.items),
+  };
+
+  const platformStatus = {
+    taobao: taobaoResult.status,
+    jd: jdResult.status,
+    pdd: pddResult.status,
   };
 
   const merged = [...byPlatform.taobao, ...byPlatform.jd, ...byPlatform.pdd];
@@ -33,6 +35,7 @@ export async function searchByKeyword(keyword: string): Promise<SearchResult> {
     fetchedAt: new Date().toISOString(),
     lowest: findLowestPrice(merged),
     byPlatform,
+    platformStatus,
     totalCandidates: merged.length,
   };
 }

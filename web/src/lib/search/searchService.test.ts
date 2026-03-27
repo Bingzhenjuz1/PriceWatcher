@@ -10,10 +10,12 @@ describe("searchByKeyword", () => {
     expect(result.byPlatform.jd).toHaveLength(3);
     expect(result.byPlatform.pdd).toHaveLength(3);
     expect(result.totalCandidates).toBe(9);
+    expect(result.platformStatus.taobao.status).toBe("ok");
+    expect(result.platformStatus.jd.status).toBe("ok");
+    expect(result.platformStatus.pdd.status).toBe("ok");
 
     expect(result.lowest).not.toBeNull();
     expect(result.lowest?.platform).toBe("pdd");
-    expect(result.lowest?.currentPrice).toBe(3129);
+    expect(result.lowest?.currentPrice).toBe(3159);
   });
 });
-
