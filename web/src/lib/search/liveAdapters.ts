@@ -39,21 +39,62 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalizeLink(platform: Platform, href: string, keyword: string): string {
+function normalizeLink(platform: Platform, href: string): string | null {
   if (!href) {
-    return mapFallbackSearchLink(platform, keyword);
+    return null;
   }
   const normalized = href.startsWith("//") ? `https:${href}` : href;
   try {
     const url = new URL(normalized);
     const host = url.hostname.toLowerCase();
-    if (platform === "taobao" && /taobao\.com|tmall\.com/.test(host)) return url.toString();
-    if (platform === "jd" && /jd\.com/.test(host)) return url.toString();
-    if (platform === "pdd" && /pinduoduo\.com|yangkeduo\.com/.test(host)) return url.toString();
-    return mapFallbackSearchLink(platform, keyword);
+    const path = url.pathname.toLowerCase();
+    if (
+      platform === "taobao" &&
+      (/item\.taobao\.com/.test(host) || /detail\.tmall\.com/.test(host))
+    ) {
+      return url.toString();
+    }
+    if (platform === "jd" && /item\.jd\.com/.test(host)) {
+      return url.toString();
+    }
+    if (
+      platform === "pdd" &&
+      /yangkeduo\.com|pinduoduo\.com/.test(host) &&
+      /goods/.test(path)
+    ) {
+      return url.toString();
+    }
+    return null;
   } catch {
-    return mapFallbackSearchLink(platform, keyword);
+    return null;
   }
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "");
+}
+
+function keywordTokens(keyword: string): string[] {
+  return keyword
+    .toLowerCase()
+    .split(/[\s,，;；|/\\]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 2);
+}
+
+function relevanceScore(title: string, keyword: string): number {
+  const titleNorm = normalizeText(title);
+  const keywordNorm = normalizeText(keyword);
+  let score = 0;
+  if (titleNorm.includes(keywordNorm)) {
+    score += 5;
+  }
+  for (const token of keywordTokens(keyword)) {
+    if (titleNorm.includes(token)) {
+      score += 2;
+    }
+  }
+  return score;
 }
 
 function mapPlatformUrl(platform: Platform, keyword: string): string {
@@ -192,16 +233,22 @@ async function scrapeByPlaywright(
       extracted
         .map((item) => {
           const price = normalizePrice(item.priceText);
+          const link = normalizeLink(platform, item.link);
           if (price == null) return null;
+          if (link == null) return null;
+          const score = relevanceScore(item.title, keyword);
+          if (score <= 0) return null;
           return {
             platform,
             title: item.title,
             currentPrice: price,
-            link: normalizeLink(platform, item.link, keyword),
+            link,
           } satisfies ProductCandidate;
         })
         .filter((item): item is ProductCandidate => item != null),
-    ).slice(0, 3);
+    )
+      .sort((a, b) => a.currentPrice - b.currentPrice)
+      .slice(0, 3);
 
     if (mapped.length === 0) {
       return {
