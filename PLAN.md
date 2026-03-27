@@ -99,7 +99,7 @@ Out of Scope:
 - [x] 基础依赖安装（Prisma / BullMQ / Redis client / Vitest）
 - [x] 基线 API 路由：`/api/health`
 - [x] 基线单测：最低价计算函数
-- [ ] 关键词搜索 API（待开发）
+- [x] 关键词搜索 API v1（mock 三平台，返回最低价）
 - [ ] 三平台适配器（待开发）
 
 ## 8. 验收清单
