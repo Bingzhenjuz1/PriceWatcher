@@ -23,6 +23,13 @@ function statusText(status: { status: string; reason?: string }) {
   return "抓取失败";
 }
 
+function sourceText(source: SearchResult["source"]) {
+  if (source === "live") return "实时抓取";
+  if (source === "cache") return "缓存结果";
+  if (source === "stale-cache") return "回退缓存";
+  return "测试数据";
+}
+
 function CandidateCard({ item }: { item: ProductCandidate }) {
   return (
     <li className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -132,6 +139,9 @@ export default function Home() {
           <section className="mt-8 space-y-5">
             <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 sm:p-6">
               <div className="text-base text-emerald-700 sm:text-lg">当前最低价</div>
+              <div className="mt-1 text-sm text-emerald-700">
+                数据来源：{sourceText(result.source)}
+              </div>
               {result.lowest ? (
                 <>
                   <div className="mt-2 text-2xl font-semibold text-emerald-900 sm:text-3xl">

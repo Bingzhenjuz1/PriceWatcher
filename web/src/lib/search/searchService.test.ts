@@ -6,6 +6,7 @@ describe("searchByKeyword", () => {
     const result = await searchByKeyword("iphone");
 
     expect(result.keyword).toBe("iphone");
+    expect(result.source).toBe("mock");
     expect(result.byPlatform.taobao).toHaveLength(3);
     expect(result.byPlatform.jd).toHaveLength(3);
     expect(result.byPlatform.pdd).toHaveLength(3);

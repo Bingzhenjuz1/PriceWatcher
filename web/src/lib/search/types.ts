@@ -14,6 +14,7 @@ export type PlatformFetchStatus = {
 export type SearchResult = {
   keyword: string;
   fetchedAt: string;
+  source: "live" | "cache" | "stale-cache" | "mock";
   lowest: ProductCandidate | null;
   byPlatform: Record<Platform, ProductCandidate[]>;
   platformStatus: Record<Platform, PlatformFetchStatus>;

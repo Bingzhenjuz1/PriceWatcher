@@ -4,6 +4,7 @@ import type { Platform, PlatformFetchStatus } from "./types";
 
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const FETCH_TIMEOUT_MS = 20_000;
+const MAX_ATTEMPTS = 2;
 
 type FetchResult = {
   items: ProductCandidate[];
@@ -32,6 +33,27 @@ function dedupe(items: ProductCandidate[]): ProductCandidate[] {
     result.push(item);
   }
   return result;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeLink(platform: Platform, href: string, keyword: string): string {
+  if (!href) {
+    return mapFallbackSearchLink(platform, keyword);
+  }
+  const normalized = href.startsWith("//") ? `https:${href}` : href;
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    if (platform === "taobao" && /taobao\.com|tmall\.com/.test(host)) return url.toString();
+    if (platform === "jd" && /jd\.com/.test(host)) return url.toString();
+    if (platform === "pdd" && /pinduoduo\.com|yangkeduo\.com/.test(host)) return url.toString();
+    return mapFallbackSearchLink(platform, keyword);
+  } catch {
+    return mapFallbackSearchLink(platform, keyword);
+  }
 }
 
 function mapPlatformUrl(platform: Platform, keyword: string): string {
@@ -80,10 +102,14 @@ async function scrapeByPlaywright(
     await page.waitForTimeout(2500);
 
     const pageTitle = await page.title();
-    if (/(验证|登录|captcha|risk)/i.test(pageTitle)) {
+    const currentUrl = page.url();
+    if (
+      /(验证|登录|captcha|risk)/i.test(pageTitle) ||
+      /passport|login|verify|captcha/.test(currentUrl)
+    ) {
       return {
         items: [],
-        status: { status: "blocked", reason: `页面风控: ${pageTitle}` },
+        status: { status: "blocked", reason: `页面风控或登录拦截: ${pageTitle}` },
       };
     }
 
@@ -171,7 +197,7 @@ async function scrapeByPlaywright(
             platform,
             title: item.title,
             currentPrice: price,
-            link: item.link,
+            link: normalizeLink(platform, item.link, keyword),
           } satisfies ProductCandidate;
         })
         .filter((item): item is ProductCandidate => item != null),
@@ -222,6 +248,16 @@ export async function fetchPlatformCandidates(
   if (process.env.NODE_ENV === "test" || process.env.SEARCH_DATA_MODE === "mock") {
     return mockForTest(platform, keyword);
   }
-  return scrapeByPlaywright(platform, keyword);
+  let last: FetchResult = { items: [], status: { status: "error", reason: "unknown" } };
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const result = await scrapeByPlaywright(platform, keyword);
+    last = result;
+    if (result.items.length > 0 || result.status.status === "blocked") {
+      return result;
+    }
+    if (attempt < MAX_ATTEMPTS) {
+      await sleep(600 + Math.floor(Math.random() * 700));
+    }
+  }
+  return last;
 }
-
