@@ -6,11 +6,18 @@ function createMockItems(
   keyword: string,
   prices: number[],
 ): ProductCandidate[] {
+  const encodedKeyword = encodeURIComponent(keyword);
+  const platformSearchUrl: Record<Platform, string> = {
+    taobao: `https://s.taobao.com/search?q=${encodedKeyword}`,
+    jd: `https://search.jd.com/Search?keyword=${encodedKeyword}`,
+    pdd: `https://mobile.yangkeduo.com/search_result.html?search_key=${encodedKeyword}`,
+  };
+
   return prices.map((price, index) => ({
     platform,
     title: `${keyword} - ${platform.toUpperCase()} item ${index + 1}`,
     currentPrice: price,
-    link: `https://example.com/${platform}/${encodeURIComponent(keyword)}/${index + 1}`,
+    link: platformSearchUrl[platform],
   }));
 }
 
@@ -31,4 +38,3 @@ export async function fetchPddCandidates(
 ): Promise<ProductCandidate[]> {
   return createMockItems("pdd", keyword, [3159, 3129, 3229]);
 }
-
