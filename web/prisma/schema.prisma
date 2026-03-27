@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Platform {
+  taobao
+  jd
+  pdd
+}
+
+enum WatchItemStatus {
+  active
+  paused
+}
+
+model WatchItem {
+  id          String          @id @default(cuid())
+  keyword     String
+  status      WatchItemStatus @default(active)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  candidates  ProductCandidate[]
+  snapshots   PriceSnapshot[]
+
+  @@index([keyword])
+  @@index([status])
+}
+
+model ProductCandidate {
+  id             String    @id @default(cuid())
+  watchItemId    String
+  platform       Platform
+  title          String
+  currentPrice   Decimal   @db.Decimal(10, 2)
+  productUrl     String
+  brand          String?
+  model          String?
+  spec           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  watchItem      WatchItem @relation(fields: [watchItemId], references: [id], onDelete: Cascade)
+
+  @@index([watchItemId])
+  @@index([platform])
+  @@index([brand, model])
+}
+
+model PriceSnapshot {
+  id               String    @id @default(cuid())
+  watchItemId      String
+  platform         Platform
+  candidateTitle   String
+  currentPrice     Decimal   @db.Decimal(10, 2)
+  estimatedTotal   Decimal?  @db.Decimal(10, 2)
+  productUrl       String
+  capturedAt       DateTime  @default(now())
+  watchItem        WatchItem @relation(fields: [watchItemId], references: [id], onDelete: Cascade)
+
+  @@index([watchItemId, capturedAt])
+  @@index([platform, capturedAt])
+}
+
+model SearchLog {
+  id              String   @id @default(cuid())
+  keyword         String
+  requestedAt     DateTime @default(now())
+  durationMs      Int?
+  totalCandidates Int      @default(0)
+  lowestPlatform  Platform?
+  lowestPrice     Decimal? @db.Decimal(10, 2)
+
+  @@index([keyword, requestedAt])
+}

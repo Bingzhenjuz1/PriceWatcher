@@ -1,0 +1,11 @@
+# Local tool/cache directories
+.npm-cache/
+.tmp/
+
+# Local agent/runtime directories
+.agents/
+.codex/
+
+# Web app artifacts
+web/node_modules/
+web/.next/
